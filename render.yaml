@@ -5,6 +5,7 @@ services:
     name: civicresolve
     runtime: node
     plan: free
+    region: singapore    # same region as the Neon database
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /login
