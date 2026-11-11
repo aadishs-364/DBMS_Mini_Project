@@ -1,0 +1,27 @@
+{
+  "name": "civicresolve",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:local": "node scripts/local-db.mjs",
+    "db:setup": "node --env-file=.env.local scripts/setup-db.mjs",
+    "test": "node --env-file=.env.local scripts/test-api.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.0.0",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.9.0",
+    "next": "^15.3.0",
+    "pg": "^8.13.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
+    "@electric-sql/pglite-pgvector": "^0.0.17",
+    "@electric-sql/pglite-socket": "^0.2.19"
+  }
+}
