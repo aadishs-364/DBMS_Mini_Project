@@ -1,0 +1,19 @@
+# Render Blueprint: deploys the whole Next.js app (pages + API routes) as one web service.
+# The database is hosted separately (Neon); paste its connection string as DATABASE_URL.
+services:
+  - type: web
+    name: civicresolve
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false          # asked for when you create the service
+      - key: SESSION_SECRET
+        generateValue: true  # Render generates a random secret
+      - key: DEDUP_THRESHOLD
+        value: "0.70"
