@@ -3,6 +3,19 @@
 
 ---
 
+> **Update after implementation.** The SQL that actually runs is in `db/01_schema.sql`
+> and `db/02_functions_triggers.sql`; treat those as the source of truth. They differ
+> from the first draft below in these ways, which the ER diagram and relational schema
+> in the report must also show:
+>
+> - `app_user` has `department_id` (FK → department): officers belong to a department.
+> - `category` has `description` and `embedding vector(384)`: routing compares a
+>   complaint's embedding with each category's embedding.
+> - `status_history.changed_by` is nullable: NULL means the system made the change.
+> - `sla_policy` has `CHECK (escalation_hours >= resolution_hours)`.
+> - Timestamps are `TIMESTAMPTZ`.
+> - The vector store is pgvector only; the Qdrant mirror was dropped.
+
 ## 1. Project Title
 
 **CivicResolve — A Grievance Deduplication & Smart Routing System for Urban Local Bodies (ULBs).**
