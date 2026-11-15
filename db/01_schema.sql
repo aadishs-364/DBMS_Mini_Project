@@ -5,6 +5,7 @@
 
 -- Clean start (DROP)
 DROP VIEW  IF EXISTS v_department_open_load;
+DROP VIEW  IF EXISTS v_officer_workload;
 DROP TABLE IF EXISTS audit_log, comment, attachment, status_history,
                      assignment, complaint_vector, complaint,
                      complaint_cluster, sla_policy, category,
@@ -185,6 +186,7 @@ CREATE INDEX idx_complaint_cluster  ON complaint(cluster_id);
 CREATE INDEX idx_complaint_citizen  ON complaint(citizen_id);
 CREATE INDEX idx_complaint_created  ON complaint(created_at DESC);
 CREATE INDEX idx_assignment_officer ON assignment(officer_id);
+CREATE INDEX idx_assignment_complaint ON assignment(complaint_id, assigned_at DESC);
 CREATE INDEX idx_history_complaint  ON status_history(complaint_id, changed_at);
 
 -- Partial index: only unresolved complaints matter for the SLA check
@@ -208,3 +210,24 @@ LEFT JOIN category  cat ON cat.department_id = d.department_id
 LEFT JOIN complaint c   ON c.category_id = cat.category_id
                        AND c.status IN ('OPEN','ASSIGNED','IN_PROGRESS','ESCALATED')
 GROUP BY d.department_id, d.dept_name;
+
+-- View: current open workload per officer, including officers with no assignments
+CREATE VIEW v_officer_workload AS
+SELECT u.user_id AS officer_id,
+       u.full_name AS officer_name,
+       d.dept_name,
+       COUNT(c.complaint_id)::int AS open_complaints,
+       COUNT(c.complaint_id) FILTER (WHERE c.sla_due_at < NOW())::int AS overdue_complaints
+FROM app_user u
+JOIN role r ON r.role_id = u.role_id AND r.role_name = 'OFFICER'
+LEFT JOIN department d ON d.department_id = u.department_id
+LEFT JOIN (
+    SELECT DISTINCT ON (a.complaint_id)
+           a.complaint_id, a.officer_id
+    FROM assignment a
+    ORDER BY a.complaint_id, a.assigned_at DESC, a.assignment_id DESC
+) current_assignment ON current_assignment.officer_id = u.user_id
+LEFT JOIN complaint c ON c.complaint_id = current_assignment.complaint_id
+                       AND c.status IN ('OPEN','ASSIGNED','IN_PROGRESS','ESCALATED')
+GROUP BY u.user_id, u.full_name, d.dept_name
+ORDER BY d.dept_name NULLS LAST, u.full_name;
