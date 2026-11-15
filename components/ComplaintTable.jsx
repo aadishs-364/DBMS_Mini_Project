@@ -46,7 +46,7 @@ export default function ComplaintTable({ rows, extra = [], emptyText = 'No compl
                 <td>
                   <span className={`status ${c.status}`}>{statusLabel(c.status)}</span>
                 </td>
-                <td>{c.priority.charAt(0) + c.priority.slice(1).toLowerCase()}</td>
+                <td><span className={`priority ${c.priority}`}>{c.priority.charAt(0) + c.priority.slice(1).toLowerCase()}</span></td>
                 {has('reports') && <td className="num">{c.report_count}</td>}
                 <td className={late ? 'late' : undefined}>{dueText(c.sla_due_at, c.status)}</td>
                 <td className="small">{formatDate(c.created_at)}</td>

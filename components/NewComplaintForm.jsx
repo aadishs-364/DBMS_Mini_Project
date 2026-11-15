@@ -63,11 +63,7 @@ export default function NewComplaintForm({ wards, defaultWardId }) {
         </label>
         <input id="photo_url" name="photo_url" type="url" placeholder="https://" />
 
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
+        {error && <div className="toast error" role="alert">{error}</div>}
         <div className="actions">
           <button type="submit" disabled={busy !== ''}>
             {busy === 'submit' ? 'Submitting…' : 'Submit complaint'}
@@ -109,7 +105,7 @@ export default function NewComplaintForm({ wards, defaultWardId }) {
                     <td>{m.title}</td>
                     <td>{statusLabel(m.status)}</td>
                     <td className="num">{m.report_count}</td>
-                    <td className="num">{Math.round(m.similarity * 100)}%</td>
+                    <td className="num"><span className="match-score">{Math.round(m.similarity * 100)}%</span></td>
                   </tr>
                 ))}
               </tbody>

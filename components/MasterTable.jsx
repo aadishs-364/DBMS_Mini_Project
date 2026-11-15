@@ -75,7 +75,7 @@ export default function MasterTable({ entity, pk, columns, rows }) {
   return (
     <>
       {error && (
-        <div className="notice warn" role="alert">
+        <div className="toast error" role="alert">
           <strong>Not saved.</strong> {error}
         </div>
       )}

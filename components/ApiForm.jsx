@@ -37,11 +37,7 @@ export default function ApiForm({ action, method = 'POST', submitLabel, then, re
   return (
     <form onSubmit={onSubmit}>
       {children}
-      {error && (
-        <p className="error" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <div className="toast error" role="alert">{error}</div>}
       <div className="actions">
         <button type="submit" disabled={busy}>
           {busy ? 'Please wait…' : submitLabel}

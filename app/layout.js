@@ -1,14 +1,13 @@
-import Link from 'next/link';
 import './globals.css';
-import { getUser, homeFor } from '@/lib/auth';
-import LogoutButton from '@/components/LogoutButton';
+import { getUser } from '@/lib/auth';
+import AppShell from '@/components/AppShell';
 
 export const metadata = {
   title: 'CivicResolve',
   description: 'Report and track civic issues in your ward',
 };
 
-const LINKS = {
+export const LINKS = {
   CITIZEN: [
     ['/citizen/complaints', 'My complaints'],
     ['/citizen/new', 'Report an issue'],
@@ -28,32 +27,7 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="en">
-      <body>
-        <header className="site-header">
-          <div className="inner">
-            <Link href={user ? homeFor(user.role) : '/login'} className="name">
-              CivicResolve
-            </Link>
-            <nav>
-              {user &&
-                LINKS[user.role].map(([href, label]) => (
-                  <Link key={href} href={href}>
-                    {label}
-                  </Link>
-                ))}
-            </nav>
-            {user && (
-              <div className="who">
-                <span>
-                  {user.name} ({user.role.toLowerCase()})
-                </span>
-                <LogoutButton />
-              </div>
-            )}
-          </div>
-        </header>
-        <main>{children}</main>
-      </body>
+      <body><AppShell user={user} links={LINKS}>{children}</AppShell></body>
     </html>
   );
 }

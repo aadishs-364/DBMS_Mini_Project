@@ -7,7 +7,7 @@ import ActionButton from '@/components/ActionButton';
 export default async function AdminDashboardPage() {
   await requireRole('ADMIN');
 
-  const [totals, deptLoad, byWard, resolution, overdue] = await Promise.all([
+  const [totals, deptLoad, byWard, resolution, overdue, last7, workload] = await Promise.all([
     // aggregate with FILTER: several counts in one pass over the table
     query(
       `SELECT COUNT(*)::int                                                        AS total,
@@ -51,10 +51,28 @@ export default async function AdminDashboardPage() {
        ORDER BY c.sla_due_at
        LIMIT 15`
     ),
+    query(
+      `SELECT d::date AS day, COUNT(c.complaint_id)::int AS complaints
+       FROM generate_series(CURRENT_DATE - 6, CURRENT_DATE, INTERVAL '1 day') AS d
+       LEFT JOIN complaint c ON c.created_at::date = d::date
+       GROUP BY d
+       ORDER BY d`
+    ),
+    query('SELECT * FROM v_officer_workload'),
   ]);
 
   const t = totals[0];
-  const maxOpen = Math.max(1, ...deptLoad.map((d) => Number(d.open_complaints)));
+  const chartMax = Math.max(1, ...last7.map((d) => Number(d.complaints)));
+  const colors = ['#2563eb', '#8b5cf6', '#14b8a6', '#f59e0b', '#ef4444', '#ec4899'];
+  const totalOpen = deptLoad.reduce((sum, d) => sum + Number(d.open_complaints), 0);
+  let angle = 0;
+  const donutStops = deptLoad.map((d, i) => {
+    const next = angle + (totalOpen ? Number(d.open_complaints) / totalOpen : 1 / Math.max(1, deptLoad.length)) * 360;
+    const stop = `${colors[i % colors.length]} ${angle}deg ${next}deg`;
+    angle = next;
+    return stop;
+  }).join(', ');
+  const points = last7.map((d, i) => `${(i / Math.max(1, last7.length - 1)) * 100},${100 - (Number(d.complaints) / chartMax) * 84 - 8}`).join(' ');
 
   return (
     <>
@@ -64,35 +82,22 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="stats">
-        <div className="stat"><b>{t.total}</b><span>Reports received</span></div>
-        <div className="stat"><b>{t.open}</b><span>Open</span></div>
-        <div className="stat"><b>{t.escalated}</b><span>Escalated</span></div>
-        <div className="stat"><b>{t.resolved_today}</b><span>Resolved today</span></div>
-        <div className="stat"><b>{t.duplicate_clusters}</b><span>Issues reported more than once</span></div>
-        <div className="stat"><b>{t.tickets_saved}</b><span>Duplicate tickets avoided</span></div>
+        <div className="stat"><span className="stat-icon">◉</span><b>{t.total}</b><span>Reports received</span></div>
+        <div className="stat"><span className="stat-icon">◌</span><b>{t.open}</b><span>Open</span></div>
+        <div className="stat"><span className="stat-icon">!</span><b>{t.escalated}</b><span>Escalated</span></div>
+        <div className="stat"><span className="stat-icon">✓</span><b>{t.resolved_today}</b><span>Resolved today</span></div>
+        <div className="stat"><span className="stat-icon">↗</span><b>{t.duplicate_clusters}</b><span>Issues reported more than once</span></div>
+        <div className="stat"><span className="stat-icon">↘</span><b>{t.tickets_saved}</b><span>Duplicate tickets avoided</span></div>
       </div>
 
       <div className="columns" style={{ marginTop: 6 }}>
         <div>
           <h2>Open complaints by department</h2>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Department</th><th className="num">Open</th><th className="num">Past deadline</th><th></th></tr>
-              </thead>
-              <tbody>
-                {deptLoad.map((d) => (
-                  <tr key={d.department_id}>
-                    <td>{d.dept_name}</td>
-                    <td className="num">{d.open_complaints}</td>
-                    <td className={`num ${Number(d.overdue_complaints) ? 'late' : ''}`}>{d.overdue_complaints}</td>
-                    <td>
-                      <div className="bar"><i style={{ width: `${(Number(d.open_complaints) / maxOpen) * 100}%` }} /></div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="box chart-card donut-layout">
+            <div className="donut" style={{ background: `conic-gradient(${donutStops || '#dbeafe 0 360deg'})` }} />
+            <div className="legend">
+              {deptLoad.map((d, i) => <span key={d.department_id}><i style={{ background: colors[i % colors.length] }} />{d.dept_name} <strong>{d.open_complaints}</strong></span>)}
+            </div>
           </div>
 
           <h2>Average time to resolve</h2>
@@ -134,6 +139,28 @@ export default async function AdminDashboardPage() {
                   </tr>
                 ))}
               </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div className="columns" style={{ marginTop: 6 }}>
+        <div>
+          <h2>Complaints filed, last 7 days</h2>
+          <div className="box chart-card">
+            <svg className="area-chart" viewBox="0 0 100 110" preserveAspectRatio="none" role="img" aria-label="Complaints filed over the last seven days">
+              <polyline points={`0,102 ${points} 100,102`} fill="#dbeafe" opacity=".8" />
+              <polyline points={points} fill="none" stroke="#2563eb" strokeWidth="1.8" vectorEffect="non-scaling-stroke" />
+              {last7.map((d, i) => <text key={d.day} x={(i / Math.max(1, last7.length - 1)) * 100} y="108" textAnchor="middle" fontSize="4" fill="#64748b">{new Date(d.day).toLocaleDateString(undefined, { weekday: 'short' })}</text>)}
+            </svg>
+          </div>
+        </div>
+        <div>
+          <h2>Officer workload</h2>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Officer</th><th>Department</th><th className="num">Open</th><th className="num">Past deadline</th></tr></thead>
+              <tbody>{workload.map((o) => <tr key={o.officer_id}><td>{o.officer_name}</td><td>{o.dept_name ?? '-'}</td><td className="num">{o.open_complaints}</td><td className={`num ${Number(o.overdue_complaints) ? 'late' : ''}`}>{o.overdue_complaints}</td></tr>)}</tbody>
             </table>
           </div>
         </div>
