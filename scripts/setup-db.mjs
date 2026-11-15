@@ -111,8 +111,8 @@ try {
   const summary = (await client.query('SELECT status, COUNT(*)::int AS n FROM complaint GROUP BY status ORDER BY status')).rows;
   const clusters = await one('SELECT COUNT(*)::int AS n FROM complaint_cluster WHERE report_count > 1');
   console.log('\nComplaints by status:', summary.map((r) => `${r.status}=${r.n}`).join(', '));
-  console.log(`Issues reported more than once: ${clusters.n} (expected 5 with the sample data)`);
-  if (clusters.n !== 5) {
+  console.log(`Issues reported more than once: ${clusters.n} (expected 6 with the sample data)`);
+  if (clusters.n !== 6) {
     console.log(
       'Not 5: look at the "closest match" numbers above and adjust DEDUP_THRESHOLD in .env.local,\n' +
         'then run this script again. Duplicates should score above the threshold, unrelated complaints below it.'

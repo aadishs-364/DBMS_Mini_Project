@@ -86,6 +86,7 @@ WHERE t.n > (SELECT AVG(n) FROM (SELECT COUNT(*) AS n FROM complaint GROUP BY wa
 
 -- ---------- View ----------
 SELECT * FROM v_department_open_load ORDER BY open_complaints DESC;
+SELECT * FROM v_officer_workload;
 
 -- ---------- Vector similarity search (pgvector) ----------
 -- the 5 complaints closest in meaning to complaint #1 (<=> is cosine distance)
@@ -108,6 +109,12 @@ ORDER BY cl.report_count DESC;
 
 -- ---------- Index usage ----------
 EXPLAIN ANALYZE SELECT * FROM complaint WHERE status = 'OPEN' AND ward_id = 1;
+EXPLAIN ANALYZE
+SELECT a.*
+FROM assignment a
+WHERE a.complaint_id = 1
+ORDER BY a.assigned_at DESC
+LIMIT 1;
 
 -- ---------- 8. Stored procedure, function, triggers ----------
 CALL sp_escalate_overdue();

@@ -274,6 +274,38 @@ await test('T32', 'Every page opens for its role without a server error', async 
   }
 });
 
+await test('T33', 'Successful citizen registration stores a bcrypt password hash', async () => {
+  const email = `new-citizen-${Date.now()}@example.test`;
+  const r = await client().post('/api/auth/register', { full_name: 'New Citizen', email, password: 'longenough1', ward_id: ward12 });
+  expect(r.status === 200, `expected 200, got ${r.status}`);
+  const row = await one('SELECT password_hash FROM app_user WHERE email = $1', [email]);
+  expect(row && row.password_hash.startsWith('$2'), 'password was not stored as bcrypt');
+});
+await test('T34', 'An assigned officer can add a comment to the complaint', async () => {
+  const body = `Officer update ${Date.now()}`;
+  const r = await officer.post('/api/complaints/1/comments', { body });
+  expect(r.status === 200, `expected 200, got ${r.status}`);
+  const row = await one('SELECT cm.body, cm.author_id FROM comment cm WHERE cm.body = $1', [body]);
+  expect(row && row.author_id === roadOfficer.user_id, 'comment was not stored by the assigned officer');
+});
+await test('T35', 'After logout, opening the citizen complaints page redirects to login', async () => {
+  const loggedIn = client();
+  expect((await loggedIn.login('aarav@example.test')).status === 200, 'login failed');
+  const logout = await loggedIn.post('/api/auth/logout');
+  expect(logout.status === 200, `logout returned ${logout.status}`);
+  const page = await loggedIn.get('/citizen/complaints');
+  expect(page.status === 307 && page.location.includes('/login'), `status ${page.status}, location ${page.location}`);
+});
+await test('T36', 'An officer cannot take an already assigned complaint', async () => {
+  const r = await officer.post('/api/complaints/1/assign');
+  expect(r.status === 400 || r.status === 403, `expected refusal, got ${r.status}`);
+});
+await test('T37', 'Officer workload has one row per officer', async () => {
+  const expected = await one(`SELECT COUNT(*)::int AS n FROM app_user u JOIN role r ON r.role_id = u.role_id WHERE r.role_name = 'OFFICER'`);
+  const actual = await one('SELECT COUNT(*)::int AS n FROM v_officer_workload');
+  expect(actual.n === expected.n, `expected ${expected.n} rows, got ${actual.n}`);
+});
+
 await db.end();
 console.table(results);
 if (process.env.TEST_REPORT) await writeFile(process.env.TEST_REPORT, JSON.stringify(results, null, 1));
