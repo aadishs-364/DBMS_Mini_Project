@@ -31,7 +31,7 @@ export default function ActionButton({ action, body, method = 'POST', confirmTex
       <button type="button" className={className} onClick={run} disabled={busy}>
         {children}
       </button>
-      {message && <span className="small muted"> {message}</span>}
+      {message && <span className={`toast ${message.includes('error') ? 'error' : ''}`} role="status">{message}</span>}
     </>
   );
 }
