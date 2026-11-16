@@ -166,3 +166,9 @@ td input, td select { min-width: 110px; padding: 4px 6px; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
+
+/* ---------- pages shown before login (login, register) ---------- */
+.public-page { max-width: 460px; margin: 0 auto; padding: 56px 20px 60px; }
+.public-page .narrow { max-width: none; }
+.public-brand { color: var(--ink); padding: 0 0 28px; }
+.public-brand > span:last-child span { color: var(--brand); }
