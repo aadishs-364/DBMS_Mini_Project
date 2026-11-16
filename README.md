@@ -62,6 +62,130 @@ The database includes:
   priority changes, and audit logging;
 - `sp_escalate_overdue()` for SLA-based escalation.
 
+```mermaid
+erDiagram
+    ROLE ||--o{ APP_USER : "has"
+    WARD ||--o{ APP_USER : "home of"
+    DEPARTMENT ||--o{ APP_USER : "employs"
+    DEPARTMENT ||--|{ CATEGORY : "handles"
+    CATEGORY ||--o| SLA_POLICY : "governed by"
+    WARD ||--o{ COMPLAINT : "located in"
+    CATEGORY ||--o{ COMPLAINT : "classifies"
+    APP_USER ||--o{ COMPLAINT : "files"
+    COMPLAINT_CLUSTER ||--|{ COMPLAINT : "groups"
+    COMPLAINT ||--o| COMPLAINT_VECTOR : "embedded as"
+    COMPLAINT ||--o{ ASSIGNMENT : "assigned via"
+    APP_USER ||--o{ ASSIGNMENT : "handles"
+    COMPLAINT ||--o{ STATUS_HISTORY : "logs"
+    COMPLAINT ||--o{ ATTACHMENT : "has"
+    COMPLAINT ||--o{ COMMENT : "receives"
+    APP_USER ||--o{ COMMENT : "writes"
+    APP_USER ||--o{ AUDIT_LOG : "performs"
+
+    ROLE {
+      int role_id PK
+      varchar role_name
+    }
+    WARD {
+      int ward_id PK
+      int ward_number
+      varchar ward_name
+      varchar zone
+    }
+    DEPARTMENT {
+      int department_id PK
+      varchar dept_name
+      varchar description
+    }
+    CATEGORY {
+      int category_id PK
+      varchar category_name
+      text description
+      int department_id FK
+      vector embedding
+    }
+    SLA_POLICY {
+      int sla_id PK
+      int category_id FK
+      int resolution_hours
+      int escalation_hours
+    }
+    APP_USER {
+      int user_id PK
+      varchar full_name
+      varchar email
+      varchar phone
+      varchar password_hash
+      int role_id FK
+      int ward_id FK
+      int department_id FK
+      timestamptz created_at
+    }
+    COMPLAINT_CLUSTER {
+      int cluster_id PK
+      int representative_complaint_id FK
+      int report_count
+      text centroid_summary
+      timestamptz created_at
+    }
+    COMPLAINT {
+      int complaint_id PK
+      varchar title
+      text description
+      int citizen_id FK
+      int ward_id FK
+      int category_id FK
+      int cluster_id FK
+      varchar status
+      varchar priority
+      timestamptz created_at
+      timestamptz sla_due_at
+      timestamptz resolved_at
+    }
+    COMPLAINT_VECTOR {
+      int complaint_id PK, FK
+      vector embedding
+    }
+    ASSIGNMENT {
+      int assignment_id PK
+      int complaint_id FK
+      int officer_id FK
+      int assigned_by FK
+      timestamptz assigned_at
+    }
+    STATUS_HISTORY {
+      int history_id PK
+      int complaint_id FK
+      varchar old_status
+      varchar new_status
+      int changed_by FK
+      text remarks
+      timestamptz changed_at
+    }
+    ATTACHMENT {
+      int attachment_id PK
+      int complaint_id FK
+      varchar file_url
+      varchar file_type
+      timestamptz uploaded_at
+    }
+    COMMENT {
+      int comment_id PK
+      int complaint_id FK
+      int author_id FK
+      text body
+      timestamptz created_at
+    }
+    AUDIT_LOG {
+      int log_id PK
+      int user_id FK
+      varchar action
+      varchar entity
+      int entity_id
+      timestamptz created_at
+    }
+```
+
 The executable SQL files are the source of truth for the implementation:
 
 - [`db/01_schema.sql`](db/01_schema.sql) - tables, constraints, indexes, and view
