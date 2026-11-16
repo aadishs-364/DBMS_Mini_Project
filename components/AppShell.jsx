@@ -9,7 +9,17 @@ export default function AppShell({ user, links, children }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  if (!user) return <main>{children}</main>;
+  if (!user) {
+    return (
+      <main className="public-page">
+        <Link href="/login" className="brand public-brand">
+          <span className="brand-mark">C</span>
+          <span>Civic<span>Resolve</span></span>
+        </Link>
+        {children}
+      </main>
+    );
+  }
 
   return (
     <div className="app-shell">
